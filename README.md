@@ -1,4 +1,4 @@
-# ChipotleNBAFinalsBot
+#NBAFinalsBot
 #This code is meant for fun only and not to be used in the contest
 
 #Need to have the twitter page up and auto refeshing
