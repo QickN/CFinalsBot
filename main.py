@@ -1,3 +1,8 @@
+#This code is meant for fun only and not to be used in the contest
+#Need to have the twitter page up and auto refeshing
+#Need to have a mac with a shortcut setup to send the code to the number
+#Thank you!
+
 import mss
 import imageio
 import pytesseract
@@ -6,15 +11,13 @@ import os
 import pyperclip
 from subprocess import call
 
+#Colors
 COLOR_RED = "\033[91m"
 COLOR_GREEN = "\033[92m"
 COLOR_YELLOW = "\033[93m"
 COLOR_RESET = "\033[0m"
 
-
-
-
-
+#Opening Art
 art = '''
         _________ .__    .__               __  .__         _________            .___                
         \_   ___ \|  |__ |__|_____   _____/  |_|  |   ____ \_   ___ \  ____   __| _/____            
@@ -33,6 +36,7 @@ _________                       __   .__                _________               
 print(art)
 
 
+#Define functions
 def captureScreenshot(left, top, width, height, output_file):
     with mss.mss() as sct:
         monitor = {"left": left, "top": top, "width": width, "height": height}
@@ -74,29 +78,28 @@ captureAreaTop = 700
 captureAreaWidth = 700 
 captureAreaHeight = 400 
 
-refresh_interval = 3
-
+#Main loop
 while True:
     
     text = processScreenshot(captureAreaLeft, captureAreaTop, captureAreaWidth, captureAreaHeight)
-
     text = makeSingleLine(text)
     text = text.lower()
 
     # Find the code in the text
-    start_word = "text"
-    end_word = "to"
+    startWord = "text"
+    endWord = "to"
 
-    index = text.find(start_word)
+    #Loop to look for the word we need
+    index = text.find(startWord)
     if index != -1:
-        stopIndex = text.find(end_word, index + len(start_word))
+        stopIndex = text.find(endWord, index + len(startWord))
         if stopIndex != -1:
-            code = text[index + 1 + len(start_word):stopIndex - 1]
+            code = text[index + 1 + len(startWord):stopIndex - 1]
             #make the clipboard copy the code
             code = code.upper()
             pyperclip.copy(code)
             print(f"{COLOR_GREEN}{code}{COLOR_RESET} Code has been copied to clipboard")
             sendCodeToChipotle(code)
 
-
-    time.sleep(refresh_interval)
+    #Time asleep
+    time.sleep(3)
