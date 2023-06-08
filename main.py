@@ -33,57 +33,54 @@ _________                       __   .__                _________               
 print(art)
 
 
-def capture_screenshot(left, top, width, height, output_file):
+def captureScreenshot(left, top, width, height, output_file):
     with mss.mss() as sct:
         monitor = {"left": left, "top": top, "width": width, "height": height}
         sct_img = sct.grab(monitor)
         imageio.imwrite(output_file, sct_img)
 
-def extract_text_from_screenshot(image_path):
+def extractTextFromScreenshot(image_path):
     image = pytesseract.image_to_string(image_path)
     return image
 
-def process_screenshot(left, top, width, height):
+def processScreenshot(left, top, width, height):
     screenshot_file = "screenshot.png"
-    capture_screenshot(left, top, width, height, screenshot_file)
-    text = extract_text_from_screenshot(screenshot_file)
+    captureScreenshot(left, top, width, height, screenshot_file)
+    text = extractTextFromScreenshot(screenshot_file)
     return text
 
-def make_single_line(text):
+def makeSingleLine(text):
     return text.replace('\n', ' ').replace('\r', ' ')
-
-    # Delete the screenshot file
     os.remove(screenshot_file)
 
+#create gloabal variable to store the code
 sentCode = ""
 
 def sendCodeToChipotle(code):
     global sentCode
-
 
     if sentCode == code:
         print("Code already sent")
         return
     else:
         sentCode = code
-
         call(["shortcuts", "run", "ChipotleBurrito"])
         print("Code sent")
 
 
-# Example usage
-capture_area_left = 100  
-capture_area_top = 700 
-capture_area_width = 700 
-capture_area_height = 400 
+#set your capture area
+captureAreaLeft = 100  
+captureAreaTop = 700 
+captureAreaWidth = 700 
+captureAreaHeight = 400 
 
 refresh_interval = 3
 
 while True:
     
-    text = process_screenshot(capture_area_left, capture_area_top, capture_area_width, capture_area_height)
+    text = processScreenshot(captureAreaLeft, captureAreaTop, captureAreaWidth, captureAreaHeight)
 
-    text = make_single_line(text)
+    text = makeSingleLine(text)
     text = text.lower()
 
     # Find the code in the text
