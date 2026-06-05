@@ -1,105 +1,104 @@
-#This code is meant for fun only and not to be used in the contest
-#Need to have the twitter page up and auto refeshing
-#Need to have a mac with a shortcut setup to send the code to the number
-#Thank you!
+"""OCR helper for detecting promotional codes in a configured screen region.
 
-import mss
-import imageio
-import pytesseract
-import time
+The script captures a region of the screen, runs Tesseract OCR against it, and sends a newly
+detected code through a local macOS Shortcut. It is a personal automation experiment, not a
+production service.
+"""
+
 import os
-import pyperclip
+import time
 from subprocess import call
 
-#Colors
-COLOR_RED = "\033[91m"
+import imageio
+import mss
+import pyperclip
+import pytesseract
+
 COLOR_GREEN = "\033[92m"
-COLOR_YELLOW = "\033[93m"
 COLOR_RESET = "\033[0m"
+SCREENSHOT_FILE = "screenshot.png"
+SHORTCUT_NAME = "ChipotleBurrito"
 
-#Opening Art
-art = '''
-        _________ .__    .__               __  .__         _________            .___                
-        \_   ___ \|  |__ |__|_____   _____/  |_|  |   ____ \_   ___ \  ____   __| _/____            
-        /    \  \/|  |  \|  \____ \ /  _ \   __\  | _/ __ \/    \  \/ /  _ \ / __ |/ __ \           
-        \     \___|   Y  \  |  |_> >  <_> )  | |  |_\  ___/\     \___(  <_> ) /_/ \  ___/           
-         \______  /___|  /__|   __/ \____/|__| |____/\___  >\______  /\____/\____ |\___  >          
-                \/     \/   |__|                         \/        \/            \/    \/           
-_________                       __   .__                _________               __                  
-\_   ___ \____________    ____ |  | _|__| ____    ____ /   _____/__.__. _______/  |_  ____   _____  
-/    \  \/\_  __ \__  \ _/ ___\|  |/ /  |/    \  / ___\\_____  <   |  |/  ___/\   __\/ __ \ /     \ 
-\     \____|  | \// __ \\  \___|    <|  |   |  \/ /_/  >        \___  |\___ \  |  | \  ___/|  Y Y  \
- \______  /|__|  (____  /\___  >__|_ \__|___|  /\___  /_______  / ____/____  > |__|  \___  >__|_|  /
-        \/            \/     \/     \/       \//_____/        \/\/         \/            \/      \/ 
-'''
-
-print(art)
+sent_code = ""
 
 
-#Define functions
-def captureScreenshot(left, top, width, height, output_file):
-    with mss.mss() as sct:
+def capture_screenshot(left, top, width, height, output_file):
+    """Capture a rectangular screen region to an image file."""
+    with mss.mss() as screen:
         monitor = {"left": left, "top": top, "width": width, "height": height}
-        sct_img = sct.grab(monitor)
-        imageio.imwrite(output_file, sct_img)
+        screenshot = screen.grab(monitor)
+        imageio.imwrite(output_file, screenshot)
 
-def extractTextFromScreenshot(image_path):
-    image = pytesseract.image_to_string(image_path)
-    return image
 
-def processScreenshot(left, top, width, height):
-    screenshot_file = "screenshot.png"
-    captureScreenshot(left, top, width, height, screenshot_file)
-    text = extractTextFromScreenshot(screenshot_file)
-    return text
+def extract_text_from_screenshot(image_path):
+    """Run OCR on the saved screenshot."""
+    return pytesseract.image_to_string(image_path)
 
-def makeSingleLine(text):
-    return text.replace('\n', ' ').replace('\r', ' ')
-    os.remove(screenshot_file)
 
-#create gloabal variable to store the code
-sentCode = ""
+def process_screenshot(left, top, width, height):
+    """Capture, read, and then remove the temporary screenshot."""
+    try:
+        capture_screenshot(left, top, width, height, SCREENSHOT_FILE)
+        return extract_text_from_screenshot(SCREENSHOT_FILE)
+    finally:
+        if os.path.exists(SCREENSHOT_FILE):
+            os.remove(SCREENSHOT_FILE)
 
-def sendCodeToChipotle(code):
-    global sentCode
 
-    if sentCode == code:
+def make_single_line(text):
+    return text.replace("\n", " ").replace("\r", " ")
+
+
+def send_code_to_shortcut(code):
+    """Send each detected code only once."""
+    global sent_code
+
+    if sent_code == code:
         print("Code already sent")
         return
-    else:
-        sentCode = code
-        call(["shortcuts", "run", "ChipotleBurrito"])
-        print("Code sent")
+
+    sent_code = code
+    call(["shortcuts", "run", SHORTCUT_NAME])
+    print("Code sent")
 
 
-#set your capture area
-captureAreaLeft = 100  
-captureAreaTop = 700 
-captureAreaWidth = 700 
-captureAreaHeight = 400 
+def extract_code(text):
+    start_word = "text"
+    end_word = "to"
 
-#Main loop
-while True:
-    
-    text = processScreenshot(captureAreaLeft, captureAreaTop, captureAreaWidth, captureAreaHeight)
-    text = makeSingleLine(text)
-    text = text.lower()
+    start_index = text.find(start_word)
+    if start_index == -1:
+        return None
 
-    # Find the code in the text
-    startWord = "text"
-    endWord = "to"
+    stop_index = text.find(end_word, start_index + len(start_word))
+    if stop_index == -1:
+        return None
 
-    #Loop to look for the word we need
-    index = text.find(startWord)
-    if index != -1:
-        stopIndex = text.find(endWord, index + len(startWord))
-        if stopIndex != -1:
-            code = text[index + 1 + len(startWord):stopIndex - 1]
-            #make the clipboard copy the code
-            code = code.upper()
+    return text[start_index + len(start_word):stop_index].strip().upper()
+
+
+def main():
+    capture_area_left = 100
+    capture_area_top = 700
+    capture_area_width = 700
+    capture_area_height = 400
+
+    while True:
+        text = process_screenshot(
+            capture_area_left,
+            capture_area_top,
+            capture_area_width,
+            capture_area_height,
+        )
+        code = extract_code(make_single_line(text).lower())
+
+        if code:
             pyperclip.copy(code)
-            print(f"{COLOR_GREEN}{code}{COLOR_RESET} Code has been copied to clipboard")
-            sendCodeToChipotle(code)
+            print(f"{COLOR_GREEN}{code}{COLOR_RESET} copied to clipboard")
+            send_code_to_shortcut(code)
 
-    #Time asleep
-    time.sleep(3)
+        time.sleep(3)
+
+
+if __name__ == "__main__":
+    main()
